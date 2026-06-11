@@ -1,6 +1,10 @@
-const express = require("express");
+﻿const express = require("express");
 const controller = require("./kanbanColors.controller");
 
+/**
+ * Routeur Express de gestion des couleurs Kanban.
+ * @type {import("express").Router}
+ */
 const router = express.Router();
 
 router.get("/", controller.listColors);

@@ -1,4 +1,4 @@
-const defaultKanbanColors = [
+﻿const defaultKanbanColors = [
     {
         statusKey: "new",
         title: "Nouveau",
@@ -16,6 +16,11 @@ const defaultKanbanColors = [
     }
 ];
 
+/**
+ * Cree les tables necessaires a la configuration Kanban.
+ * @param {import("sql.js").Database} db Instance SQLite.
+ * @returns {void}
+ */
 const createSchema = (db) => {
     db.run(`
         CREATE TABLE IF NOT EXISTS kanban_colors (
@@ -27,6 +32,11 @@ const createSchema = (db) => {
     `);
 };
 
+/**
+ * Insere les couleurs Kanban par defaut si elles n'existent pas encore.
+ * @param {import("sql.js").Database} db Instance SQLite.
+ * @returns {void}
+ */
 const seedDefaultKanbanColors = (db) => {
     const statement = db.prepare(`
         INSERT OR IGNORE INTO kanban_colors
@@ -46,6 +56,11 @@ const seedDefaultKanbanColors = (db) => {
     statement.free();
 };
 
+/**
+ * Prepare la base en creant le schema et les donnees initiales.
+ * @param {import("sql.js").Database} db Instance SQLite.
+ * @returns {void}
+ */
 const initializeSchema = (db) => {
     createSchema(db);
     seedDefaultKanbanColors(db);

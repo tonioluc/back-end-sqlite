@@ -1,7 +1,11 @@
-const cors = require("cors");
+﻿const cors = require("cors");
 const express = require("express");
 const routes = require("./routes");
 
+/**
+ * Application Express du backend SQLite.
+ * @type {import("express").Express}
+ */
 const app = express();
 
 app.use(cors());

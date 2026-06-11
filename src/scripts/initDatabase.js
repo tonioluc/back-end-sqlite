@@ -1,4 +1,4 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
 const env = require("../config/env");
 const {
@@ -6,6 +6,10 @@ const {
     persistDatabase
 } = require("../database/database");
 
+/**
+ * Initialise le fichier SQLite et persiste les donnees de base.
+ * @returns {Promise<void>} Promesse resolue apres initialisation.
+ */
 const initDatabase = async () => {
     await initializeDatabase();
     persistDatabase();

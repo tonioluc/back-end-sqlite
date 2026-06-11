@@ -1,7 +1,11 @@
-const path = require("path");
+﻿const path = require("path");
 
 const rootDir = path.resolve(__dirname, "../..");
 
+/**
+ * Configuration runtime du backend SQLite.
+ * @type {{ databaseFile: string, nodeEnv: string, port: number }}
+ */
 const env = {
     databaseFile: process.env.SQLITE_DATABASE_FILE ||
         path.join(rootDir, "data", "app.sqlite"),

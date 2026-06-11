@@ -2,19 +2,36 @@
     {
         statusKey: "new",
         title: "Nouveau",
+        titleMg: "Vaovao",
         color: "#cfe8ff"
     },
     {
         statusKey: "inProgress",
         title: "In progress",
+        titleMg: "Efa manao",
         color: "#ffe6c7"
     },
     {
         statusKey: "done",
         title: "Termine",
+        titleMg: "Vita",
         color: "#dff4df"
     }
 ];
+
+/**
+ * Indique si une colonne existe deja dans une table SQLite.
+ * @param {import("sql.js").Database} db Instance SQLite.
+ * @param {string} tableName Nom de table.
+ * @param {string} columnName Nom de colonne.
+ * @returns {boolean} `true` si la colonne existe.
+ */
+const columnExists = (db, tableName, columnName) => {
+    const result = db.exec(`PRAGMA table_info(${tableName});`);
+    const rows = result[0]?.values || [];
+
+    return rows.some((row) => row[1] === columnName);
+};
 
 /**
  * Cree les tables necessaires a la configuration Kanban.
@@ -26,10 +43,33 @@ const createSchema = (db) => {
         CREATE TABLE IF NOT EXISTS kanban_colors (
             status_key TEXT PRIMARY KEY,
             title TEXT NOT NULL,
+            title_mg TEXT NOT NULL DEFAULT '',
             color TEXT NOT NULL,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS kanban_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+};
+
+/**
+ * Applique les migrations simples sur une base deja existante.
+ * @param {import("sql.js").Database} db Instance SQLite.
+ * @returns {void}
+ */
+const migrateSchema = (db) => {
+    if (!columnExists(db, "kanban_colors", "title_mg")) {
+        db.run(`
+            ALTER TABLE kanban_colors
+            ADD COLUMN title_mg TEXT NOT NULL DEFAULT '';
+        `);
+    }
 };
 
 /**
@@ -38,32 +78,60 @@ const createSchema = (db) => {
  * @returns {void}
  */
 const seedDefaultKanbanColors = (db) => {
-    const statement = db.prepare(`
+    const insertStatement = db.prepare(`
         INSERT OR IGNORE INTO kanban_colors
-            (status_key, title, color, updated_at)
+            (status_key, title, title_mg, color, updated_at)
         VALUES
-            (?, ?, ?, CURRENT_TIMESTAMP);
+            (?, ?, ?, ?, CURRENT_TIMESTAMP);
+    `);
+    const titleStatement = db.prepare(`
+        UPDATE kanban_colors
+        SET title_mg = ?
+        WHERE status_key = ? AND (title_mg IS NULL OR title_mg = '');
     `);
 
     defaultKanbanColors.forEach((item) => {
-        statement.run([
+        insertStatement.run([
             item.statusKey,
             item.title,
+            item.titleMg,
             item.color
+        ]);
+
+        titleStatement.run([
+            item.titleMg,
+            item.statusKey
         ]);
     });
 
-    statement.free();
+    insertStatement.free();
+    titleStatement.free();
 };
 
 /**
- * Prepare la base en creant le schema et les donnees initiales.
+ * Insere les parametres Kanban par defaut si besoin.
+ * @param {import("sql.js").Database} db Instance SQLite.
+ * @returns {void}
+ */
+const seedDefaultKanbanSettings = (db) => {
+    db.run(`
+        INSERT OR IGNORE INTO kanban_settings
+            (key, value, updated_at)
+        VALUES
+            ('language', 'fr', CURRENT_TIMESTAMP);
+    `);
+};
+
+/**
+ * Prepare la base en creant le schema, les migrations et les donnees initiales.
  * @param {import("sql.js").Database} db Instance SQLite.
  * @returns {void}
  */
 const initializeSchema = (db) => {
     createSchema(db);
+    migrateSchema(db);
     seedDefaultKanbanColors(db);
+    seedDefaultKanbanSettings(db);
 };
 
 module.exports = {

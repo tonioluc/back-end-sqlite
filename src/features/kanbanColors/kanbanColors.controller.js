@@ -1,7 +1,7 @@
 ﻿const service = require("./kanbanColors.service");
 
 /**
- * Repond avec la liste des couleurs Kanban configurees.
+ * Repond avec la configuration Kanban complete.
  * @param {import("express").Request} request Requete Express.
  * @param {import("express").Response} response Reponse Express.
  * @returns {void}
@@ -13,7 +13,7 @@ const listColors = (request, response) => {
 };
 
 /**
- * Met a jour la couleur d'une colonne Kanban.
+ * Met a jour une colonne Kanban.
  * @param {import("express").Request} request Requete Express.
  * @param {import("express").Response} response Reponse Express.
  * @returns {void}
@@ -21,7 +21,8 @@ const listColors = (request, response) => {
 const updateColor = (request, response) => {
     const color = service.updateColor({
         statusKey: request.params.statusKey,
-        color: request.body.color
+        color: request.body.color,
+        titleMg: request.body.titleMg
     });
 
     response.json({
@@ -30,18 +31,19 @@ const updateColor = (request, response) => {
 };
 
 /**
- * Met a jour les couleurs des trois colonnes Kanban.
+ * Met a jour les couleurs, libelles malgaches et la langue active du Kanban.
  * @param {import("express").Request} request Requete Express.
  * @param {import("express").Response} response Reponse Express.
  * @returns {void}
  */
 const updateColors = (request, response) => {
-    const colors = service.updateColors(
-        request.body.colors
-    );
+    const settings = service.updateColors({
+        language: request.body.language,
+        columns: request.body.columns || request.body.colors
+    });
 
     response.json({
-        data: colors
+        data: settings
     });
 };
 

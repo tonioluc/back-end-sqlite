@@ -1,5 +1,6 @@
 ﻿const {
     allowedKanbanStatusKeys,
+    allowedKanbanLanguages,
     colorPattern
 } = require("./kanbanColors.constants");
 const repository = require("./kanbanColors.repository");
@@ -24,14 +25,35 @@ const validateColor = (color) => (
 );
 
 /**
- * Valide une demande de mise a jour de couleur Kanban.
- * @param {{ statusKey: string, color: string }} params Donnees a valider.
- * @returns {void}
- * @throws {Error} Si le statut ou la couleur est invalide.
+ * Verifie qu'une langue Kanban est supportee.
+ * @param {string} language Langue a verifier.
+ * @returns {boolean} `true` si la langue est supportee.
  */
-const validateColorUpdate = ({
+const validateLanguage = (language) => (
+    allowedKanbanLanguages.includes(language)
+);
+
+/**
+ * Verifie qu'un titre malgache est exploitable.
+ * @param {string} titleMg Titre malgache.
+ * @returns {boolean} `true` si le titre est valide.
+ */
+const validateTitleMg = (titleMg) => (
+    typeof titleMg === "string" &&
+    titleMg.trim().length > 0 &&
+    titleMg.trim().length <= 80
+);
+
+/**
+ * Valide une demande de mise a jour de colonne Kanban.
+ * @param {{ statusKey: string, color: string, titleMg: string }} params Donnees a valider.
+ * @returns {void}
+ * @throws {Error} Si le statut, la couleur ou le titre est invalide.
+ */
+const validateColumnUpdate = ({
     statusKey,
-    color
+    color,
+    titleMg
 }) => {
     if (!isAllowedStatusKey(statusKey)) {
         const error = new Error("Statut Kanban invalide.");
@@ -44,49 +66,83 @@ const validateColorUpdate = ({
         error.statusCode = 400;
         throw error;
     }
+
+    if (!validateTitleMg(titleMg)) {
+        const error = new Error("Le libelle malgache est obligatoire.");
+        error.statusCode = 400;
+        throw error;
+    }
 };
 
 /**
- * Retourne la configuration de couleurs Kanban.
- * @returns {Array<object>} Couleurs Kanban.
+ * Valide la langue active du Kanban.
+ * @param {string} language Langue a valider.
+ * @returns {void}
+ * @throws {Error} Si la langue est invalide.
  */
-const listColors = () => repository.listKanbanColors();
+const validateKanbanLanguage = (language) => {
+    if (!validateLanguage(language)) {
+        const error = new Error("Langue Kanban invalide.");
+        error.statusCode = 400;
+        throw error;
+    }
+};
 
 /**
- * Met a jour une couleur Kanban apres validation.
- * @param {{ statusKey: string, color: string }} params Donnees de mise a jour.
- * @returns {object | undefined} Couleur mise a jour.
+ * Retourne la configuration complete du Kanban.
+ * @returns {{ language: string, columns: Array<object> }} Configuration Kanban.
+ */
+const listColors = () => repository.getKanbanSettings();
+
+/**
+ * Met a jour une colonne Kanban apres validation.
+ * @param {{ statusKey: string, color: string, titleMg: string }} params Donnees de mise a jour.
+ * @returns {object | undefined} Colonne mise a jour.
  */
 const updateColor = ({
     statusKey,
-    color
+    color,
+    titleMg
 }) => {
-    validateColorUpdate({
+    validateColumnUpdate({
         statusKey,
-        color
+        color,
+        titleMg
     });
 
-    return repository.updateKanbanColor({
+    return repository.updateKanbanColumn({
         statusKey,
-        color
+        color,
+        titleMg: titleMg.trim()
     });
 };
 
 /**
- * Met a jour toutes les couleurs Kanban apres validation.
- * @param {Array<{ statusKey: string, color: string }>} colors Couleurs a enregistrer.
- * @returns {Array<object>} Couleurs apres sauvegarde.
+ * Met a jour toute la configuration Kanban apres validation.
+ * @param {{ language: string, columns: Array<{ statusKey: string, color: string, titleMg: string }> }} settings Configuration a enregistrer.
+ * @returns {{ language: string, columns: Array<object> }} Configuration apres sauvegarde.
  */
-const updateColors = (colors) => {
-    if (!Array.isArray(colors)) {
-        const error = new Error("La liste des couleurs est invalide.");
+const updateColors = (settings) => {
+    const language = settings?.language || "fr";
+    const columns = settings?.columns;
+
+    validateKanbanLanguage(language);
+
+    if (!Array.isArray(columns)) {
+        const error = new Error("La liste des colonnes est invalide.");
         error.statusCode = 400;
         throw error;
     }
 
-    colors.forEach(validateColorUpdate);
+    columns.forEach(validateColumnUpdate);
 
-    return repository.updateKanbanColors(colors);
+    return repository.updateKanbanSettings({
+        language,
+        columns: columns.map((column) => ({
+            ...column,
+            titleMg: column.titleMg.trim()
+        }))
+    });
 };
 
 module.exports = {

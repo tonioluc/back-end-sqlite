@@ -56,6 +56,17 @@ const createSchema = (db) => {
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    db.run(`
+        CREATE TABLE IF NOT EXISTS couts (
+            id_auto INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_ticket INTEGER NOT NULL,
+            type_cout TEXT NOT NULL,
+            cout REAL NOT NULL,
+            id_item TEXT NOT NULL,
+            id_category TEXT NOT NULL,
+            "group" TEXT NOT NULL
+        );
+    `);
 };
 
 /**
@@ -70,6 +81,9 @@ const migrateSchema = (db) => {
             ADD COLUMN title_mg TEXT NOT NULL DEFAULT '';
         `);
     }
+
+    db.run("DROP TABLE IF EXISTS super_couts;");
+    db.run("DROP TABLE IF EXISTS reouverture_couts;");
 };
 
 /**

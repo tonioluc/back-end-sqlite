@@ -2,33 +2,37 @@
 
 ## Vue d'ensemble
 
-Ce projet est un backend Node.js basé sur **Express** et **SQLite** via **sql.js**. Il expose une API HTTP sous `/api`, initialise automatiquement la base locale au démarrage, puis orchestre la logique métier autour d'une feature principale : la configuration des couleurs Kanban.
+Ce projet est un backend Node.js base sur **Express** et **SQLite** via **sql.js**. Il expose une API HTTP sous `/api`, initialise automatiquement la base locale au demarrage, puis gere trois domaines metier principaux :
 
-L'architecture suit une séparation simple en couches :
+- la configuration des couleurs Kanban
+- les **super couts** saisis lors de la fermeture d'un ticket
+- les **couts de reouverture** calcules a partir du dernier super cout
 
-- **point d'entrée** pour lancer le serveur
+L'architecture suit une separation simple en couches :
+
+- **point d'entree** pour lancer le serveur
 - **configuration** pour les variables d'environnement
 - **application Express** pour les middlewares et le routage global
-- **base de données** pour l'initialisation, la persistance et le schéma SQLite
-- **features** pour la logique métier
-- **scripts** pour les opérations d'initialisation manuelle
+- **base de donnees** pour l'initialisation, la persistance et le schema SQLite
+- **features** pour la logique metier
+- **scripts** pour les operations d'initialisation manuelle
 
 ## Stack technique
 
 - **Node.js** en CommonJS
 - **Express 5** pour le serveur HTTP
-- **SQLite** embarqué via **sql.js**
+- **SQLite** embarque via **sql.js**
 - **dotenv** pour la configuration par environnement
-- **cors** pour l'accès cross-origin
+- **cors** pour l'acces cross-origin
 
-## Points d'entrée
+## Points d'entree
 
-Le backend possède deux entrées principales :
+Le backend possede deux entrees principales :
 
-1. `index.js` : point d'entrée racine, qui charge le serveur
-2. `src/server.js` : initialise la base SQLite puis démarre Express
+1. `index.js` : point d'entree racine, qui charge le serveur
+2. `src/server.js` : initialise la base SQLite puis demarre Express
 
-### Chaîne de démarrage
+### Chaine de demarrage
 
 - `index.js` importe `src/server.js`
 - `src/server.js` charge les variables d'environnement, initialise la base, puis appelle `app.listen()`
@@ -38,12 +42,12 @@ Le backend possède deux entrées principales :
 
 ## `src/config`
 
-La configuration runtime est centralisée dans `src/config/env.js`.
+La configuration runtime est centralisee dans `src/config/env.js`.
 
 Ce module expose :
 
 - `databaseFile` : chemin du fichier SQLite persistant
-- `nodeEnv` : environnement d'exécution
+- `nodeEnv` : environnement d'execution
 - `port` : port HTTP du serveur
 
 Les valeurs peuvent provenir des variables d'environnement :
@@ -54,20 +58,20 @@ Les valeurs peuvent provenir des variables d'environnement :
 
 ## `src/database`
 
-Cette couche gère le moteur SQLite, le chargement du fichier local et le schéma initial.
+Cette couche gere le moteur SQLite, le chargement du fichier local et le schema initial.
 
 ### `src/database/database.js`
 
-Responsabilités principales :
+Responsabilites principales :
 
 - charger le moteur `sql.js`
-- créer le répertoire de stockage si besoin
-- ouvrir la base depuis le fichier existant ou créer une base neuve
-- initialiser le schéma
+- creer le repertoire de stockage si besoin
+- ouvrir la base depuis le fichier existant ou creer une base neuve
+- initialiser le schema
 - persister la base sur disque
 - exposer l'instance SQLite courante
 
-Fonctions clés :
+Fonctions cles :
 
 - `initializeDatabase()`
 - `getDatabase()`
@@ -75,38 +79,42 @@ Fonctions clés :
 
 ### `src/database/schema.js`
 
-Ce module définit le schéma et les données de départ.
+Ce module definit le schema et les donnees de depart.
 
-Il crée notamment :
+Il cree notamment :
 
 - `kanban_colors`
 - `kanban_settings`
+- `couts`
 
-Il gère aussi :
+La table `couts` centralise maintenant tous les couts locaux de l'application, au lieu de multiplier les tables dediees.
+
+Ce module gere aussi :
 
 - les migrations simples, par exemple l'ajout de la colonne `title_mg`
-- le seed des couleurs Kanban par défaut
-- le seed de la langue par défaut (`fr`)
+- la suppression des anciennes tables `super_couts` et `reouverture_couts`
+- le seed des couleurs Kanban par defaut
+- le seed de la langue par defaut (`fr`)
 
 ## `src/features`
 
-Les fonctionnalités métiers sont isolées dans `src/features`.
+Les fonctionnalites metier sont isolees dans `src/features`.
 
 ### `features/kanbanColors`
 
-C'est la feature principale du backend actuel. Elle gère la configuration Kanban : couleurs, libellés et langue active.
+Cette feature gere la configuration Kanban : couleurs, libelles et langue active.
 
 #### `kanbanColors.constants.js`
 
-Contient les contraintes métier :
+Contient les contraintes metier :
 
-- statuts autorisés : `new`, `inProgress`, `done`
-- langues autorisées : `fr`, `mg`
-- format de couleur attendu : hexadécimal `#RRGGBB`
+- statuts autorises : `new`, `inProgress`, `done`
+- langues autorisees : `fr`, `mg`
+- format de couleur attendu : hexadecimal `#RRGGBB`
 
 #### `kanbanColors.routes.js`
 
-Définit les endpoints Express de la ressource Kanban :
+Definit les endpoints Express de la ressource Kanban :
 
 - `GET /api/kanban-colors`
 - `PUT /api/kanban-colors`
@@ -114,115 +122,207 @@ Définit les endpoints Express de la ressource Kanban :
 
 #### `kanbanColors.controller.js`
 
-Rôle de couche HTTP :
+Role de couche HTTP :
 
-- lire les paramètres de requête et le body
+- lire les parametres de requete et le body
 - appeler la couche service
-- renvoyer les réponses JSON
+- renvoyer les reponses JSON
 
 #### `kanbanColors.service.js`
 
-Rôle métier :
+Role metier :
 
-- valider les entrées
-- contrôler les statuts et la langue autorisés
-- vérifier le format des couleurs
-- préparer les données avant persistance
-
-La validation est volontairement strictement centralisée ici pour éviter de dupliquer les règles entre les routes.
+- valider les entrees
+- controler les statuts et la langue autorises
+- verifier le format des couleurs
+- preparer les donnees avant persistance
 
 #### `kanbanColors.repository.js`
 
-Rôle accès aux données :
+Role acces aux donnees :
 
 - lire les colonnes Kanban depuis SQLite
-- lire et mettre à jour la langue active
-- mettre à jour une colonne ou la configuration complète
-- persister les changements après écriture
+- lire et mettre a jour la langue active
+- mettre a jour une colonne ou la configuration complete
+- persister les changements apres ecriture
 
-Cette couche parle directement à l'instance SQLite retournée par `getDatabase()`.
+### `features/couts`
+
+Cette feature gere les couts complementaires stockes localement dans SQLite. Elle couvre :
+
+- le **super cout** saisi lors du passage d'un ticket vers `done`
+- le **cout de reouverture**, calcule a partir du dernier super cout du ticket
+- l'annulation du dernier groupe de super cout saisi
+- la lecture de tous les couts pour alimenter les pages de synthese
+
+Le choix d'architecture retenu est de stocker tous ces couts dans une seule table `couts`, differencies par `type_cout`.
+
+#### `couts.constants.js`
+
+Contient les types de cout reconnus :
+
+- `Cout saisi`
+- `Reouverture`
+
+#### `couts.routes.js`
+
+Definit les endpoints Express de la ressource couts :
+
+- `GET /api/couts`
+- `POST /api/couts/saisie`
+- `POST /api/couts/reouverture`
+- `DELETE /api/couts/saisie/dernier/:ticketId`
+
+#### `couts.controller.js`
+
+Role de couche HTTP :
+
+- lire les donnees du body ou des parametres
+- appeler la couche service
+- renvoyer les reponses JSON
+
+Les creations utilisent un code `201`, tandis que la lecture et la suppression renvoient `200`.
+
+#### `couts.service.js`
+
+Role metier :
+
+- valider `ticketId`, `group`, `items`, `cout` et `pourcentage`
+- repartir un super cout sur tous les items lies a un ticket
+- retrouver le dernier groupe de lignes `Cout saisi` d'un ticket
+- calculer un cout de reouverture en appliquant un pourcentage sur ce dernier groupe
+- annuler le dernier groupe de super cout si besoin
+
+La logique importante est la suivante :
+
+1. un super cout saisi est reparti sur tous les items lies au ticket
+2. chaque insertion cree plusieurs lignes partageant le meme champ `"group"`
+3. une reouverture ne repart pas de zero : elle reutilise le dernier groupe `Cout saisi`
+4. l'annulation supprime uniquement le dernier groupe correspondant
+
+#### `couts.repository.js`
+
+Role acces aux donnees :
+
+- lire les lignes de `couts`
+- inserer plusieurs lignes d'un meme groupe
+- retrouver le dernier groupe par `ticketId` et `typeCout`
+- supprimer le dernier groupe
+- purger toute la table lors d'un reset
+
+Le champ `"group"` sert a rattacher plusieurs lignes a une meme operation utilisateur.
+
+### `features/reset`
+
+Cette feature gere la reinitialisation des donnees locales du backend.
+
+Elle peut notamment supprimer les couts SQLite via `DELETE /api/reset/couts`.
 
 ## `src/routes`
 
-`src/routes/index.js` agrège les routes de l'API.
+`src/routes/index.js` agrege les routes de l'API.
 
 Il expose :
 
-- `GET /api/health` pour vérifier que le serveur répond
+- `GET /api/health` pour verifier que le serveur repond
 - `/api/kanban-colors` pour la configuration Kanban
-
-Cette couche sert de routeur principal et conserve la hiérarchie d'URL au même endroit.
+- `/api/couts` pour les super couts et couts de reouverture
+- `/api/reset` pour les operations de reinitialisation
 
 ## `src/scripts`
 
-Les scripts contiennent les opérations d'administration ou d'initialisation.
+Les scripts contiennent les operations d'administration ou d'initialisation.
 
 ### `src/scripts/initDatabase.js`
 
-Ce script permet d'initialiser explicitement la base SQLite en dehors du démarrage normal du serveur.
+Ce script permet d'initialiser explicitement la base SQLite en dehors du demarrage normal du serveur.
 
 Il :
 
 - charge les variables d'environnement
 - initialise la base
 - force la persistance du fichier SQLite
-- affiche le chemin du fichier généré
+- affiche le chemin du fichier genere
 
-## Flux de démarrage
+## Flux de demarrage
 
-Le démarrage complet suit ce scénario :
+Le demarrage complet suit ce scenario :
 
 1. `dotenv` charge l'environnement
-2. `initializeDatabase()` crée ou charge la base SQLite
-3. `initializeSchema()` applique le schéma et les valeurs par défaut
-4. `persistDatabase()` écrit la base sur disque
-5. `app.listen()` démarre le serveur Express
+2. `initializeDatabase()` cree ou charge la base SQLite
+3. `initializeSchema()` applique le schema et les valeurs par defaut
+4. `persistDatabase()` ecrit la base sur disque
+5. `app.listen()` demarre le serveur Express
 
-## Flux de requête
+## Flux de requete
 
-Pour une requête métier typique :
+Pour une requete metier typique :
 
-1. la requête arrive sur Express
+1. la requete arrive sur Express
 2. `src/app.js` applique `cors()` et `express.json()`
-3. le routeur principal délègue vers la feature concernée
-4. le controller extrait les données HTTP
-5. le service valide les règles métier
-6. le repository lit ou écrit dans SQLite
-7. la réponse JSON repart vers le client
+3. le routeur principal delegue vers la feature concernee
+4. le controller extrait les donnees HTTP
+5. le service valide les regles metier
+6. le repository lit ou ecrit dans SQLite
+7. la reponse JSON repart vers le client
+
+### Exemple : saisie d'un super cout
+
+1. le client appelle `POST /api/couts/saisie`
+2. le controller transmet `ticketId`, `cout`, `items` et `group`
+3. le service valide la charge utile
+4. le service calcule `cout / nombre d'items`
+5. le repository insere une ligne par item dans `couts`
+6. la base est persistee
+7. les lignes creees sont renvoyees au client
+
+### Exemple : creation d'un cout de reouverture
+
+1. le client appelle `POST /api/couts/reouverture`
+2. le service retrouve le dernier groupe `Cout saisi` du ticket
+3. il applique le pourcentage de reouverture sur chaque ligne du groupe
+4. le repository enregistre un nouveau groupe de type `Reouverture`
+5. la reponse revient au client
 
 ## Gestion des erreurs
 
-`src/app.js` définit deux niveaux de gestion :
+`src/app.js` definit deux niveaux de gestion :
 
 - un handler `404` pour les routes inconnues
-- un handler d'erreur global qui renvoie un statut adapté et un message JSON
+- un handler d'erreur global qui renvoie un statut adapte et un message JSON
 
-Les erreurs métier peuvent porter un `statusCode`, par exemple `400` pour une validation invalide.
+Les erreurs metier peuvent porter un `statusCode`, par exemple `400` pour une validation invalide.
 
-## Données et persistance
+## Donnees et persistance
 
-La base est stockée dans un fichier local, par défaut :
+La base est stockee dans un fichier local, par defaut :
 
 - `data/app.sqlite`
 
-Le fichier peut être remplacé via `SQLITE_DATABASE_FILE`.
+Le fichier peut etre remplace via `SQLITE_DATABASE_FILE`.
 
 Le fonctionnement retenu est le suivant :
 
-- la base est chargée en mémoire au démarrage
-- chaque écriture importante appelle `persistDatabase()`
-- le fichier SQLite reste la source de vérité entre deux redémarrages
+- la base est chargee en memoire au demarrage
+- chaque ecriture importante appelle `persistDatabase()`
+- le fichier SQLite reste la source de verite entre deux redemarrages
+
+La table `couts` sert de source de verite pour :
+
+- les super couts saisis manuellement
+- les couts de reouverture derives d'un pourcentage
+- les annulations du dernier groupe de super cout
 
 ## Conventions d'architecture
 
-- garder le point d'entrée minimal
+- garder le point d'entree minimal
 - centraliser les variables d'environnement dans `src/config`
 - isoler la logique HTTP dans les controllers
-- isoler les règles métier dans les services
-- réserver le repository à l'accès SQLite
-- persister explicitement la base après modification
-- valider les données avant toute écriture
+- isoler les regles metier dans les services
+- reserver le repository a l'acces SQLite
+- persister explicitement la base apres modification
+- valider les donnees avant toute ecriture
 
-## Résumé
+## Resume
 
-Le backend repose sur une architecture modulaire simple et lisible : Express gère le transport HTTP, SQLite stocke l'état, et la feature `kanbanColors` concentre la logique métier actuelle. Cette séparation permet d'ajouter d'autres domaines métier sans remettre en cause la structure générale.
+Le backend repose sur une architecture modulaire simple et lisible : Express gere le transport HTTP, SQLite stocke l'etat, et les features `kanbanColors`, `couts` et `reset` encapsulent chacune leur logique. L'ajout des super couts et des couts de reouverture s'integre naturellement dans cette structure grace a une separation claire entre routes, controllers, services et repository.

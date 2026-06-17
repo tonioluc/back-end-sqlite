@@ -24,9 +24,23 @@ const deleteLatestCoutSaisi = (request, response) => {
     });
 };
 
+const saveTicketRef = (request, response) => {
+    response.status(201).json({
+        data: service.saveTicketRef(request.body)
+    });
+};
+
+const findTicketRef = (request, response) => {
+    response.json({
+        data: service.findTicketRef(request.params.refTicket)
+    });
+};
+
 module.exports = {
     createCoutReouverture,
     createCoutSaisi,
     deleteLatestCoutSaisi,
-    listCouts
+    findTicketRef,
+    listCouts,
+    saveTicketRef
 };

@@ -118,10 +118,40 @@ const createCoutReouverture = ({
 
 const deleteAllCouts = () => repository.deleteAllCouts();
 
+const saveTicketRef = ({
+    refTicket,
+    idTicket
+}) => {
+    if (!refTicket || !idTicket) {
+        throw createBadRequest("Reference ticket invalide.");
+    }
+
+    return repository.saveTicketRef({
+        refTicket,
+        idTicket
+    });
+};
+
+const findTicketRef = (refTicket) => {
+    if (!refTicket) {
+        throw createBadRequest("Reference ticket obligatoire.");
+    }
+
+    const ticketRef = repository.findTicketRef(refTicket);
+
+    if (!ticketRef) {
+        throw createBadRequest("Ticket introuvable dans les references importees.");
+    }
+
+    return ticketRef;
+};
+
 module.exports = {
     createCoutReouverture,
     createCoutSaisi,
     deleteAllCouts,
     deleteLatestCoutSaisi,
-    listCouts
+    findTicketRef,
+    listCouts,
+    saveTicketRef
 };

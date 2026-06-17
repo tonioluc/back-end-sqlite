@@ -67,6 +67,13 @@ const createSchema = (db) => {
             "group" TEXT NOT NULL
         );
     `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS ticket_refs (
+            ref_ticket TEXT PRIMARY KEY,
+            id_ticket INTEGER NOT NULL
+        );
+    `);
 };
 
 /**

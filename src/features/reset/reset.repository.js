@@ -21,12 +21,15 @@ const deleteRows = (db, tableName) => {
 const resetCouts = () => {
     const db = getDatabase();
     const deleted = countRows(db, "couts");
+    const deletedTicketRefs = countRows(db, "ticket_refs");
 
     deleteRows(db, "couts");
+    deleteRows(db, "ticket_refs");
     persistDatabase();
 
     return {
-        deleted
+        deleted,
+        deletedTicketRefs
     };
 };
 

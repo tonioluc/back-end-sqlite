@@ -143,10 +143,59 @@ const deleteAllCouts = () => {
     };
 };
 
+const saveTicketRef = ({
+    refTicket,
+    idTicket
+}) => {
+    const db = getDatabase();
+    const statement = db.prepare(`
+        INSERT OR REPLACE INTO ticket_refs
+            (ref_ticket, id_ticket)
+        VALUES
+            (?, ?);
+    `);
+
+    statement.run([
+        String(refTicket),
+        Number(idTicket)
+    ]);
+
+    statement.free();
+    persistDatabase();
+
+    return {
+        refTicket,
+        idTicket
+    };
+};
+
+const findTicketRef = (refTicket) => {
+    const db = getDatabase();
+    const escapedRef = escapeSqlText(refTicket);
+    const result = db.exec(`
+        SELECT ref_ticket, id_ticket
+        FROM ticket_refs
+        WHERE ref_ticket = '${escapedRef}'
+        LIMIT 1;
+    `);
+    const row = result[0]?.values[0];
+
+    if (!row) {
+        return null;
+    }
+
+    return {
+        refTicket: row[0],
+        idTicket: row[1]
+    };
+};
+
 module.exports = {
     deleteAllCouts,
     deleteLatestGroup,
     findLatestGroupRows,
+    findTicketRef,
     insertCoutRows,
-    listCouts
+    listCouts,
+    saveTicketRef
 };
